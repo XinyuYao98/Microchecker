@@ -1,0 +1,83 @@
+package com.bjut.checker;
+
+import java.util.HashSet;
+
+public class Token {
+
+    private static final HashSet<String> keywordsSet = new HashSet<>();
+    
+    static {
+    	keywordsSet.add("package");
+    	keywordsSet.add("import");
+    	keywordsSet.add("class");
+    	keywordsSet.add("new");
+    	keywordsSet.add("final");
+        keywordsSet.add("true");
+        keywordsSet.add("false");
+        keywordsSet.add("if");
+        keywordsSet.add("else");
+        keywordsSet.add("while");
+        keywordsSet.add("public");
+        keywordsSet.add("private");
+        keywordsSet.add("for");
+        keywordsSet.add("do");
+        keywordsSet.add("try");
+        keywordsSet.add("catch");
+        keywordsSet.add("finally");
+        keywordsSet.add("this");
+        keywordsSet.add("null");
+        keywordsSet.add("throw");
+        keywordsSet.add("break");
+        keywordsSet.add("continue");
+        keywordsSet.add("return");
+        keywordsSet.add("instanceof");
+        keywordsSet.add("int");
+        keywordsSet.add("String");
+        keywordsSet.add("enum");
+        keywordsSet.add("static");
+        keywordsSet.add("boolean");
+        keywordsSet.add("void");
+    }
+ 
+    public static enum Type {
+        Keyword, Number, Identifier, Sign, Annotation, String, RegEx, Space, NewLine, EndSymbol;
+    }
+
+    public final Type type;
+    public final String value;
+    public final int lineNum;
+
+
+    Token(Type type, String value,int lineNum) {
+
+        if(type == Type.Identifier) {//如果输入类型是标识符
+            char firstChar = value.charAt(0);
+            if(firstChar >= '0' & firstChar < '9') {//如果是标识符并且以数字开头，则认为是数值类型
+                type = Type.Number;
+
+            } else if(keywordsSet.contains(value)){//如果在关键字列表中，则认为是关键字
+                type = Type.Keyword;
+            }
+        }
+        else if(type == Type.Annotation) {//如果输入类型是注释 
+            value = value.substring(2);
+        }
+        else if(type == Type.String) {//如果输入类型是字符
+            value = value.substring(1, value.length() - 1);
+        }
+        else if(type == Type.RegEx) {//如果输入类型是正则表达式
+            value = value.substring(1, value.length() - 1);
+        }
+        else if(type == Type.EndSymbol) {//如果输入类型是终止符 值是空
+            value = null;
+        }
+        this.type = type;
+        this.value = value;
+        this.lineNum = lineNum;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s(%s) ", type, value);
+    }
+}
