@@ -1,0 +1,257 @@
+package com.bjut.checker;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import com.bjut.checker.Token.Type;
+
+/**
+ * 当源代码读完了，如果状态机处于Normal状态，此时应该生成一个EndSymbol。但如果此时不处于 Normal 状态，必须抛出一个异常。
+ * 即被检查的代码写错了，例如最后一个字符串少右边的"
+ */
+public class LexicalAnalysis {
+
+    private static enum State {
+        Normal, Identifier, Sign, Annotation, String, RegEx, Space;
+    }
+
+    private static final char[] FilterChar = new char[] {
+        '\b', '\f', '\r'
+    };//先不管特殊字符
+    private static final char[] IdentifierSign = new char[] {'_'};
+
+    private static final char[] Space = new char[] {' ', '\t'};
+
+    private static final HashMap<Character, Character> StringTMMap = new HashMap<>();
+    static {
+        StringTMMap.put('\"', '\"');
+        StringTMMap.put('\'', '\'');
+        StringTMMap.put('\\', '\\');
+        StringTMMap.put('b', '\b');
+        StringTMMap.put('f', '\f');
+        StringTMMap.put('t', '\t');
+        StringTMMap.put('r', '\r');
+        StringTMMap.put('n', '\n');
+    }
+
+    private final Reader reader;//源代码文件
+
+    private Token endToken = null;//终止符
+    private final LinkedList<Token> tokenBuffer = new LinkedList<>();
+
+    private State state;
+    private StringBuilder readBuffer = null;
+    private boolean transferredMeaningSign = false;
+    private int lineNum = 1;//源代码行数
+
+    public LexicalAnalysis(Reader reader) {
+        this.reader = reader;
+        this.state = State.Normal;
+    }
+
+     public void doRead(List list) throws IOException, LexicalAnalysisException {
+        int read = reader.read();
+        while(read != -1) {
+//        	System.out.println("YY:"+(char)read);
+        	list.addAll(readTokens(read));
+        	read = reader.read();
+        }
+        
+    }
+     
+    //获取Token，并添加到链表中
+    public LinkedList<Token> readTokens(int read) throws IOException, LexicalAnalysisException {
+    	LinkedList<Token> tokens = new LinkedList<Token>();
+    	if(endToken != null) {
+            return tokens;
+        }
+    	
+        //System.out.println((char)read);
+        //tokenBuffer.clear();
+        while(tokenBuffer.isEmpty()) {
+            char c = (read == -1 ? '\0' : (char) read);
+            //System.out.println("isEmpty>>"+(char)read+" state="+state);
+            while(!readChar(c)) {
+            	//System.out.println("one more c====["+c+"] state="+state);
+            }
+            if(tokenBuffer.isEmpty()) {
+            	read = reader.read();
+
+            }
+
+        }        
+        //System.out.println("tokenBuffer>"+tokenBuffer.isEmpty());
+        //System.out.println("tokenBuffer>"+tokenBuffer.size());
+
+        while (!tokenBuffer.isEmpty()) {
+        	Token token = tokenBuffer.removeLast();
+			tokens.add(token);
+			//System.out.println("token>"+token.value);
+			if(token.type == Type.EndSymbol) {
+				endToken = token;
+			}
+	        if(token.type.toString().equals("NewLine")) {
+	        	lineNum ++;
+	        }
+		}
+        //System.out.println("tokenBuffer>"+tokenBuffer.isEmpty());
+        //System.out.println("tokenBuffer>"+tokenBuffer.size());
+
+        return tokens;
+    }
+    
+    private void refreshBuffer(char c) {
+        readBuffer = new StringBuilder();
+        readBuffer.append(c);
+    }
+    
+    private void createToken(Type type) {
+        Token token = new Token(type, readBuffer.toString(),lineNum);
+        tokenBuffer.addFirst(token);
+        readBuffer = null;
+    }
+    private void createToken(Type type, String value) {
+        Token token = new Token(type, value,lineNum);
+        tokenBuffer.addFirst(token);
+        readBuffer = null;
+    }
+    
+    //读取字符，并创建Token对象
+    //注意控制流 空
+    private boolean readChar(char c) throws LexicalAnalysisException {
+//    	System.out.println("start c:["+c+"]");
+
+        boolean moveCursor = true;//在读完当前 char 之后，是否移动游标读取下一个字符
+        Type createType = null;
+
+        if(!include(FilterChar, c)) {
+
+            if(state == State.Normal) {
+
+                if(inIdentifierSetButNotRear(c)) {
+                    state = State.Identifier;
+                }
+                else if(SignParser.inCharSet(c)) {
+                    state = State.Sign;
+                }
+                else if(c == '\"' | c == '\'') {
+                    state = State.String;
+                    transferredMeaningSign = false;
+                }
+                else if(include(Space, c)) {
+                    state = State.Space;
+                }
+                else if(c == '\n') {
+                    createType = Type.NewLine;
+                }
+                else if(c == '\0') {
+                    createType = Type.EndSymbol;
+                }
+                else {
+                    throw new LexicalAnalysisException(c);
+                }
+                refreshBuffer(c);
+
+            } else if(state == State.Identifier) {
+
+                if(inIdentifierSetButNotRear(c)) {
+                    readBuffer.append(c);
+
+                } else {
+                    createType = Type.Identifier;
+                    state = State.Normal;
+                    moveCursor = false;
+                }
+
+            } else if(state == State.Sign) {
+
+                if(SignParser.inCharSet(c)) {
+                    readBuffer.append(c);
+
+                } else {
+                	//System.out.println("readerbuffer>>"+readBuffer.toString());
+                    List<String> list = SignParser.parse(readBuffer.toString());
+                    for(String signStr:list) {
+                    	//System.out.println("signStr>>["+signStr+"]");
+                        createToken(Type.Sign, signStr);
+                    }
+                	//System.out.println("tokenBuffer>>"+tokenBuffer.toString());
+
+                    createType = null;
+                    state = State.Normal;
+                    moveCursor = false;
+                }
+
+            } else if(state == State.String) {
+
+                if(c == '\n') {
+                    throw new LexicalAnalysisException(c);
+
+                } else if(c == '\0') {
+                    throw new LexicalAnalysisException(c);
+
+                } else if(transferredMeaningSign) {
+
+                    Character tms = StringTMMap.get(c);
+                    if(tms == null) {
+                        throw new LexicalAnalysisException(c);
+                    }
+                    readBuffer.append(tms);
+                    transferredMeaningSign = false;
+
+                } else if(c == '\\') {
+                    transferredMeaningSign = true;
+
+                } else {
+                    readBuffer.append(c);
+                    char firstChar = readBuffer.charAt(0);
+                    if(firstChar == c) {
+                        createType = Type.String;
+                        state = State.Normal;
+                    }
+                }
+            } else if(state == State.Space) {
+
+                if(include(Space, c)) {
+                    readBuffer.append(c);
+
+                } else {
+                    createType = Type.Space;
+                    state = State.Normal;
+                    moveCursor = false;
+                }
+            }
+//        	System.out.println("state:["+state+"]");
+//        	System.out.println("end c:["+c+"]");
+
+        }else {
+        	//System.out.println("wrong char:["+c+"]");
+        }
+
+        if(createType != null) {
+            createToken(createType);
+        }
+        return moveCursor;
+    }
+
+    private boolean inIdentifierSetButNotRear(char c) {
+        return (c >= 'a' & c <= 'z' ) | (c >='A' & c <= 'Z') | (c >= '0' & c <= '9')|| include(IdentifierSign, c);
+    }
+
+    private boolean include(char[] range, char c) {
+        boolean include = false;
+        for(int i=0; i<range.length; ++i) {
+            if(range[i] == c) {
+                include = true;
+                break;
+            }
+        }
+        return include;
+    }
+}
