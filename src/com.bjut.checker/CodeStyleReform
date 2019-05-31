@@ -1,0 +1,75 @@
+package com.bjut.checker;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+
+public class CodeStyleReform {
+
+	public static void repair(LinkedList<Token> tokens, Map<String, LinkedList> issues) {
+		// 把单词拼接成行
+		for (String key : issues.keySet()) {
+			switch (key) {
+			case "1":
+				LinkedList<Token> newTokens = new LinkedList();
+				LinkedList<Integer> ll = (LinkedList<Integer>) issues.get(key);
+				for (Iterator iterator = ll.iterator(); iterator.hasNext();) {
+					Integer line = (Integer) iterator.next();
+					//System.out.println("错误行数》"+line);
+					int order = 0;
+					Token spaceToken = null;
+					for (Iterator iterator2 = tokens.iterator(); iterator2.hasNext();) {
+						Token token = (Token) iterator2.next();
+						newTokens.add(token);
+						// 寻找错误行
+						if (token.lineNum == line) {
+							order++;
+							if (order == 1 && token.type.toString().equals("Space")) {
+								//System.out.println("第一个单词为空格");
+								spaceToken = new Token(token.type, token.value, token.lineNum);
+							}
+							if (token.value.equals(";")) {
+								newTokens.add(new Token(Token.Type.NewLine, "\n", token.lineNum));
+								newTokens.add(spaceToken);
+							}
+						}
+					}
+					tokens.clear();
+					tokens.addAll(newTokens);
+					newTokens.clear();
+				}
+				
+				break;
+			case "2":
+				/*
+				 * 在此补充其他类别错误的修复代码
+				 */
+				
+				break;
+
+			}
+		}
+	}
+
+	public static String repairFileGenerater(LinkedList<Token> tokens, String filePath) throws IOException {
+		File f = new File(filePath);
+		Writer wr = new PrintWriter(f);
+		StringBuffer sBuffer = new StringBuffer();
+		for (Iterator iterator = tokens.iterator(); iterator.hasNext();) {
+			Token token = (Token) iterator.next();
+			sBuffer.append(token.value);
+		}
+		
+		wr.append(sBuffer.toString());
+		wr.flush();
+
+		wr.close();
+
+		return null;
+	}
+
+}
