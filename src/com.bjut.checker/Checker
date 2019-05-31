@@ -1,0 +1,41 @@
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Map;
+
+import com.bjut.checker.CodeStyleCheck;
+import com.bjut.checker.CodeStyleReform;
+import com.bjut.checker.LexicalAnalysis;
+import com.bjut.checker.LexicalAnalysisException;
+import com.bjut.checker.Token;
+
+public class Checker {
+
+	public static Map<String, LinkedList> checkAndReform(String srcPath,String destPath) throws IOException, LexicalAnalysisException {
+        
+		File f= new File(srcPath) ; 
+        Reader input = null ;    // 输入的对象
+        LinkedList ll = new LinkedList();
+
+        input = new FileReader(f);
+        LexicalAnalysis la = new LexicalAnalysis(input);
+        la.doRead(ll);
+        
+        for (Iterator iterator = ll.iterator(); iterator.hasNext();) {
+			Token object = (Token) iterator.next();
+//	        System.out.println("line "+object.lineNum+": "+object.toString());
+		}
+
+        CodeStyleCheck csc = new CodeStyleCheck();
+        Map<String, LinkedList> issues = csc.check(ll);
+        CodeStyleReform.repair(ll, issues);
+        CodeStyleReform.repairFileGenerater(ll, destPath);
+        
+        return issues;
+	}
+
+}
