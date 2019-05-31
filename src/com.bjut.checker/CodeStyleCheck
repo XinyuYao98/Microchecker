@@ -1,0 +1,159 @@
+package com.bjut.checker;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+public class CodeStyleCheck {
+
+	//public static final Map issuesMsg = new HashMap();
+	private static final Map issues = new HashMap();
+
+	/*static {
+		issuesMsg.put("1", "Multiple declaration statements in one line of code");
+		issuesMsg.put("2", "example2");
+		issuesMsg.put("3", "example3");
+		issuesMsg.put("4", "example4");
+	}*/
+	
+	static StringBuffer sBuffer = new StringBuffer();
+	public static StringBuffer getStringBuffer() {
+		
+		return sBuffer;
+	}
+
+	public Map<String, LinkedList> check(LinkedList<Token> tokens) {
+		// 把单词拼接成行
+		Map<String, LinkedList<Token>> lineTokensMap = new HashMap<String, LinkedList<Token>>();// 以行组织的单词列表
+		LinkedList<Token> lineTokens = new LinkedList<Token>();
+		Map<String, LinkedList> issues = new HashMap<String, LinkedList>();
+		LinkedList<String> issueLines = new LinkedList<String>(); 
+		issues.put("1", issueLines);
+		
+		int lineNum = 1;
+		for (Iterator iterator = tokens.iterator(); iterator.hasNext();) {
+			Token token = (Token) iterator.next();
+//			System.out.println(("NewLine".equals(token.type.toString())));
+			if (!("NewLine".equals(token.type.toString()))) {
+				lineTokens.add(token);
+			} else {
+				LinkedList<Token> tmpLineTokens = new LinkedList<Token>();
+				tmpLineTokens.addAll(lineTokens);
+				lineTokensMap.put(String.valueOf(lineNum), tmpLineTokens);
+//				System.out.println(lineNum + "==" + lineTokens.size());
+				lineNum++;
+				lineTokens.clear();
+			}
+		}
+
+		/*1. 检查每一个行中仅有一个声明
+		 * 每一行先按照“；”拆分，如果存在两个均为声明，则提示错误。
+		 */
+		for (String key : lineTokensMap.keySet()) {
+//			System.out.println("Key = " + key);
+			LinkedList<Token> lineList = lineTokensMap.get(key);
+			LinkedList<Token> tmpLine = new LinkedList<Token>();
+			LinkedList<Token> noSpaceLineList = new LinkedList<Token>();
+			Map<String, LinkedList<Token>> splitLine = new HashMap<String, LinkedList<Token>>();// 以行组织的单词列表
+			int flag = 1;
+			
+			//获取没有空格的行,同时按照;拆分成不同的集合
+			for (Iterator iterator = lineList.iterator(); iterator.hasNext();) {
+				Token token = (Token) iterator.next();
+				if(!token.type.toString().equals("Space")) {
+					noSpaceLineList.add(token);//整行保存
+					
+					tmpLine.add(token);//拆分后的集合保存
+					if(token.value.equals(";")) {//不以分号结尾的单词将丢失，但这不影响代码风格判断
+						LinkedList<Token> tmpTmpLine = new LinkedList<Token>();
+						tmpTmpLine.addAll(tmpLine);
+						tmpLine.clear();
+						splitLine.put(String.valueOf(flag), tmpTmpLine);
+						flag++;
+					}
+				}else {
+					//System.out.println("发现空格");
+				}
+			}
+			
+			if(splitLine.keySet().size()==1) {//考虑int a,b,c;情况
+				
+				
+			} else if (splitLine.keySet().size() > 1) {
+				flag = 0;// 每行中声明的数量
+				int line = 0;
+//				System.out.println("按照分号拆分后数量：" + splitLine.keySet().size());
+				
+				for (String key1 : splitLine.keySet()) {
+					tmpLine = splitLine.get(key1);
+					if (tmpLine.size() >= 5) {
+						line = ((Token) tmpLine.get(0)).lineNum;
+						if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								&& ((Token) tmpLine.get(1)).type.toString().equals("Keyword")
+								&& (((Token) tmpLine.get(2)).type.toString().equals("Keyword")
+										|| ((Token) tmpLine.get(2)).type.toString().equals("Identifier"))
+								&& ((Token) tmpLine.get(3)).type.toString().equals("Identifier")) {
+							flag++;
+						} else if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								&& (((Token) tmpLine.get(1)).type.toString().equals("Keyword")
+										|| ((Token) tmpLine.get(1)).type.toString().equals("Identifier"))
+								&& ((Token) tmpLine.get(2)).type.toString().equals("Identifier")) {
+							flag++;
+						} else if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								|| ((Token) tmpLine.get(0)).type.toString().equals("Identifier")
+										&& ((Token) tmpLine.get(1)).type.toString().equals("Identifier")) {
+							flag++;
+						}
+
+					} else if (tmpLine.size() >= 4) {
+						line = ((Token) tmpLine.get(0)).lineNum;
+
+						if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								&& (((Token) tmpLine.get(1)).type.toString().equals("Keyword")
+										|| ((Token) tmpLine.get(1)).type.toString().equals("Identifier"))
+								&& ((Token) tmpLine.get(2)).type.toString().equals("Identifier")) {
+							flag++;
+						} else if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								|| ((Token) tmpLine.get(0)).type.toString().equals("Identifier")
+										&& ((Token) tmpLine.get(1)).type.toString().equals("Identifier")) {
+							flag++;
+						}
+
+					} else if (tmpLine.size() >= 3) {
+						line = ((Token) tmpLine.get(0)).lineNum;
+
+						if (((Token) tmpLine.get(0)).type.toString().equals("Keyword")
+								|| ((Token) tmpLine.get(0)).type.toString().equals("Identifier")
+										&& ((Token) tmpLine.get(1)).type.toString().equals("Identifier")) {
+							flag++;
+						}
+					}
+
+				}
+
+				if(flag>1) {
+					sBuffer.append("第"+line+"行：声明了多个变量\n");
+					issues.get("1").add(line);
+				}
+			}
+			
+			/*
+			 * 在此以下补充其他错误类别的检查代码
+			 */
+
+			
+			
+			
+		}
+
+		 //System.out.println("issues>>"+issues.toString());
+
+		 System.out.println("检测结果：\n"+sBuffer.toString());
+
+		return issues;
+	}
+
+}
