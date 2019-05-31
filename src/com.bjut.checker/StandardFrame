@@ -1,0 +1,251 @@
+package com.bjut.checker;
+
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
+import java.io.*;
+import java.util.HashMap;
+import java.util.Scanner;
+
+import javax.swing.*;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
+import javax.swing.ImageIcon;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+
+
+public class StandardFrame extends JFrame{
+
+	private static final long serialVersionUID = 1L;
+	
+	
+	JTextArea textArea ;
+	JScrollPane scrollPane;
+	public String path;
+	public String name;
+	public String parentname;
+	
+	public StandardFrame() {
+
+		JPanel p=new JPanel();
+		textArea=new JTextArea();
+		scrollPane=new JScrollPane(textArea);
+		
+       // scrollPane.setPreferredSize(new Dimension(350, 300));
+       // scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy( JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+       // scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+       
+		scrollPane.setBounds(0, 0, 1000, 800);
+		
+		setBounds(500, 100, 1000, 800);
+		setVisible(true);
+		setTitle("Microchecker");
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		setContentPane(p);
+		//p.setBackground(Color.BLUE);
+		setLayout(new FlowLayout());
+	
+		/*Image icon = Toolkit.getDefaultToolkit().getImage("F:\\java+\\GUI\\graphic\\04.jpg");  
+		setIconImage(icon);  */
+		//窗口左上角
+		
+		/*ImageIcon img=new ImageIcon("F:\\java+\\GUI\\graphic\\01.jpg");
+		img.setImage(img.getImage().getScaledInstance(this.getWidth(),this.getHeight(),Image.SCALE_AREA_AVERAGING));
+		JLabel imgLabel=new JLabel(img);
+		this.getLayeredPane().add(imgLabel, new Integer(Integer.MIN_VALUE));
+		imgLabel.setBounds(0,0,1000, 800);*/
+		p = (JPanel)this.getContentPane();
+		p.setOpaque(false);
+		p.setLayout(new BorderLayout());
+		p.add(scrollPane);
+		//this.add(textArea);
+		
+		JMenuBar menubar;
+		JMenu m1,m2,m3;
+		JMenuItem mi1,mi2,mi3;
+		
+		menubar=new JMenuBar();
+		m1=new JMenu("file");
+		m1.setMnemonic('f');
+		m1.setFont(new Font("Calibri",Font.ITALIC,25));
+		m2=new JMenu("edit");
+		m2.setMnemonic('e');
+		m2.setFont(new Font("Calibri",Font.ITALIC,25));
+		m3=new JMenu("help");
+		m3.setMnemonic('h');
+		m3.setFont(new Font("Calibri",Font.ITALIC,25));
+		mi1=new JMenuItem("open file");
+		mi1.setFont(new Font("Calibri",Font.ITALIC,20));
+		mi2=new JMenuItem("save");
+		mi2.setFont(new Font("Calibri",Font.ITALIC,20));
+		mi3=new JMenuItem("exit");
+		mi3.setFont(new Font("Calibri",Font.ITALIC,20));
+		KeyStroke Ctrl_cutKey=KeyStroke.getKeyStroke(KeyEvent.VK_O,InputEvent.CTRL_MASK);
+		mi1.setAccelerator(Ctrl_cutKey);
+		Ctrl_cutKey=KeyStroke.getKeyStroke(KeyEvent.VK_S,InputEvent.CTRL_MASK);
+		mi2.setAccelerator(Ctrl_cutKey);
+		Ctrl_cutKey=KeyStroke.getKeyStroke(KeyEvent.VK_E,InputEvent.CTRL_MASK);
+		mi3.setAccelerator(Ctrl_cutKey);
+		
+		setJMenuBar(menubar);
+		menubar.add(m1);
+		menubar.add(m2);
+		menubar.add(m3);	
+		m1.add(mi1);
+		m1.addSeparator();
+		m1.add(mi2);
+		m1.addSeparator();
+		m1.add(mi3);
+	
+		
+		
+		mi1.addActionListener(new ActionListener() {
+			
+			public void actionPerformed(ActionEvent e) {	
+				
+				JFileChooser chooser=new JFileChooser();
+				if (chooser.showOpenDialog(mi1)==JFileChooser.APPROVE_OPTION) {
+	                File file = chooser.getSelectedFile();
+	                path = file.getPath();
+	                name=file.getName();
+	                parentname=file.getParent();
+	                
+	        		String srcPath = path;   // 声明File对象
+	        		String destPath ="D:\\changed.java";
+	        		try {
+						Checker.checkAndReform(srcPath, destPath);
+						readFile(file);
+						readChanged();
+					} catch (IOException e1){
+						
+						e1.printStackTrace();
+					} catch (LexicalAnalysisException e1) {
+						
+						e1.printStackTrace();
+					}
+	                //System.out.println(Checker.checkAndReform(srcPath, destPath).toString());
+	                //System.out.println(CodeStyleCheck.issuesMsg.get("1"));
+	            }; 
+	            
+			}
+		});
+
+		}
+	public String getSrcPath() throws FileNotFoundException {
+		 String Spath;
+		 Spath=" ";
+		 FileReader fr = new FileReader("F:\\java+\\IO测试2\\src\\out.txt");
+		 
+		try {
+           Spath=Spath+(char)fr.read();
+           
+           
+	         fr.close();  
+	           
+			
+		} catch (IOException e) {
+			
+			e.printStackTrace();
+		}
+		return Spath;
+	
+}
+		
+	
+	
+		
+		public void readFile(File file) {
+			BufferedReader bReader;
+			
+			try {
+				bReader=new BufferedReader(new FileReader(file));
+				
+				StringBuffer sBuffer=new StringBuffer();
+				String s;
+				
+				while((s=bReader.readLine())!=null) {
+					sBuffer.append(s+'\n');
+					//System.out.println(s);
+				}
+				
+				textArea.setText(sBuffer.toString() + "检测结果：\n" + CodeStyleCheck.getStringBuffer().toString());
+				
+				
+			}catch(IOException e){
+				
+			}
+		}
+			public void readChanged() {
+				BufferedReader bReader;
+				
+				try {
+					
+					bReader=new BufferedReader(new FileReader("D:\\changed.java"));
+					
+					StringBuffer sBuffer1=new StringBuffer();
+					String s1;
+					
+					while((s1=bReader.readLine())!=null) {
+						sBuffer1.append(s1+'\n');
+						//System.out.println(s);
+					}
+					textArea.setText(textArea.getText()+"\n"+sBuffer1.toString());
+					
+					
+				}catch(IOException e){
+					
+				}
+			
+		}
+		public void setWindowIcon(){
+			
+		}
+	
+		 public void copyFile(File file){
+	         File to=new File(file.getAbsolutePath()+"_copy");
+	         if (file.isFile()) {
+	             byte[] buf = new byte[1024];
+	             int length=0;
+	             try {
+	                 FileInputStream in=new FileInputStream(file);
+	                 FileOutputStream out=new FileOutputStream(to);
+	                 while((length=in.read(buf))>0){
+	                     out.write(buf,0,length);
+	                 }
+	                 out.flush();
+	                 in.close();
+	                 out.close();
+	             } catch (Exception e) {
+	                 e.printStackTrace();
+	             }
+
+	         }
+	     }
+		public void writeFile(String savepath){
+	        FileOutputStream fos= null;
+	        try {
+	            fos=new FileOutputStream(savepath);
+	            fos.write(textArea.getText().getBytes());
+	            fos.close();
+	            System.out.println(" ");
+	        } catch (Exception e) {
+	            
+	            e.printStackTrace();
+	        }
+	       textArea.getText();  
+	    }
+	
+	public static void main(String[] args) {
+		 new StandardFrame();
+	}
+		
+}
