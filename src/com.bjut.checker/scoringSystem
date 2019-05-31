@@ -1,0 +1,76 @@
+package com.bjut.checker;
+
+public class scoringSystem {
+	public int score = 100;
+	public String grade;
+	public int getScore (int x,int y,int m,int n){
+		int a = this.lineFeed(x);
+		int b = this.indent(y);
+		int c = this.brace(m);
+		int d = this.blank(n);
+		score = score - a - b - c - d;
+		return score;
+	}
+	public int lineFeed (int timelinefeed){
+		int marks=0;
+		while(timelinefeed>0){
+			marks=marks+3;
+			timelinefeed--;
+		}
+		return marks;
+	}
+	public int indent(int timeindent){
+		int marks=0;
+		while(timeindent>0){
+			marks=marks+5;
+			timeindent--;
+		}
+		return marks;
+	}
+	public int brace(int timebrace){
+		int marks=0;
+		while(timebrace>0){
+			marks=marks+3;
+			timebrace--;
+		}
+		return marks;
+	}
+	public int blank(int timeblank){
+		int marks=0;
+		while(timeblank>0){
+			marks=marks+1;
+			timeblank--;
+		}
+		return marks;
+	}
+	public String gradeSort (int score){
+		if (score <= 100 && score >= 90){
+			grade = "excellent";
+			return grade;
+		}
+		if (score < 90 && score >= 80){
+			grade = "good";
+			return grade;
+		}
+		if (score < 80 && score >= 70){
+			grade = "not bad";
+			return grade;
+		}
+		if (score < 70 && score >= 60){
+			grade = "just so so";
+			return grade;
+		}
+			
+		if (score < 60 && score >= 40){
+			grade = "not good";
+			return grade;
+		}
+			
+		else{
+			grade = "bad";
+			return grade;
+	    }
+    }
+	
+
+ }
