@@ -1,0 +1,45 @@
+package com.bjut.checker;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import com.bjut.checker.CodeStyleCheck;
+import com.bjut.checker.LexicalAnalysis;
+import com.bjut.checker.LexicalAnalysisException;
+import com.bjut.checker.Token;
+
+public class Tester {
+
+	public static void main(String[] args) throws IOException, LexicalAnalysisException {
+        
+		File f= new File("f:" + File.separator + "IOText.java") ; 
+        
+        Reader input = null ;    // 输入的对象
+        input = new FileReader(f)  ;
+        
+        LexicalAnalysis la = new LexicalAnalysis(input);
+        LinkedList ll = new LinkedList();
+        la.doRead(ll);
+        int lineNum = 1;
+        for (Iterator iterator = ll.iterator(); iterator.hasNext();) {
+			Token object = (Token) iterator.next();
+	        System.out.println("line "+object.lineNum+": "+object.toString());
+	        if(object.type.toString().equals("NewLine")) {
+	        	lineNum ++;
+	        }
+		}
+        //System.out.println(lineNum);
+
+        
+        //CodeStyleCheck csc = new CodeStyleCheck();
+        //csc.check(ll);
+        
+	}
+
+}
